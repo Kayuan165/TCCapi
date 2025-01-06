@@ -7,9 +7,10 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Attendance } from './../../attendance/entities/attendance.entity';
+import { IUser } from '../interfaces/user.interface';
 
 @Entity('users')
-export class User {
+export class User implements IUser {
   @PrimaryGeneratedColumn()
   id: number;
 

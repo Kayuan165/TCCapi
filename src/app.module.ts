@@ -4,7 +4,11 @@ import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
+import { User } from './user/entities/user.entity';
+import { Attendance } from './attendance/entities/attendance.entity';
+import { UserService } from './user/user.service';
+import { UserRepository } from './user/user.repository';
+import { UserController } from './user/user.controller';
 @Module({
   imports: [
     UserModule,
@@ -16,12 +20,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       username: 'postgres',
       password: '1234',
       database: 'TCCSystem',
-      entities: ['dist/**/*.entity{.ts,.js}'],
-      autoLoadEntities: true,
+      entities: [User, Attendance],
+      synchronize: false,
       logging: true,
     }),
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, UserController],
+  providers: [AppService, UserService, UserRepository],
 })
 export class AppModule {}
