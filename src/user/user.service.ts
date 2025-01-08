@@ -11,11 +11,14 @@ export class UserService {
   public users: User[];
   constructor(
     @InjectRepository(User)
-    private repo: Repository<User>,
+    private readonly repo: Repository<User>,
   ) {}
 
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  async create(createUserDto: CreateUserDto): Promise<CreateUserDto> {
+    const user = this.repo.create(createUserDto);
+    const dbUser = await this.repo.save(user);
+
+    return plainToInstance(CreateUserDto, dbUser);
   }
 
   public async findAll(): Promise<CreateUserDto[]> {
@@ -23,15 +26,22 @@ export class UserService {
     return plainToInstance(CreateUserDto, users);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  public async findOne(id: number): Promise<CreateUserDto> {
+    const user = await this.repo.findOne({ where: { id } });
+    return plainToInstance(CreateUserDto, user);
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
+    await this.repo.update(id, updateUserDto);
+    return this.repo.findOne({ where: { id } });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  public async remove(id: number): Promise<CreateUserDto> {
+    const user = await this.repo.findOneBy({ id });
+    if (!user) {
+      throw new Error(`O usuário não foi encontrado.`);
+    }
+    await this.repo.remove(user);
+    return plainToInstance(CreateUserDto, user);
   }
 }

@@ -6,9 +6,6 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './user/entities/user.entity';
 import { Attendance } from './attendance/entities/attendance.entity';
-import { UserService } from './user/user.service';
-import { UserRepository } from './user/user.repository';
-import { UserController } from './user/user.controller';
 @Module({
   imports: [
     UserModule,
@@ -21,11 +18,11 @@ import { UserController } from './user/user.controller';
       password: '1234',
       database: 'TCCSystem',
       entities: [User, Attendance],
-      synchronize: false,
+      synchronize: true,
       logging: true,
     }),
   ],
-  controllers: [AppController, UserController],
-  providers: [AppService, UserService, UserRepository],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

@@ -4,9 +4,7 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
-  OneToMany,
 } from 'typeorm';
-import { Attendance } from './../../attendance/entities/attendance.entity';
 import { IUser } from '../interfaces/user.interface';
 
 @Entity('users')
@@ -14,21 +12,24 @@ export class User implements IUser {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ length: 100 })
+  @Column({ type: 'varchar', length: 100, nullable: false })
   name: string;
 
-  @Column({ length: 150, unique: true })
+  @Column({ type: 'varchar', length: 100, unique: true, nullable: false })
   email: string;
 
-  @Column()
-  password: string;
+  @Column({ type: 'varchar', length: 15, unique: true, nullable: false })
+  rg: string;
 
-  @CreateDateColumn()
+  @Column({ length: 100, nullable: false })
+  photo_path: string;
+
+  @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   updated_at: Date;
 
-  @OneToMany(() => Attendance, (attendance) => attendance.user)
-  attendances: Attendance[];
+  // @OneToMany(() => Attendance, (attendance) => attendance.user)
+  // attendances: Attendance[];
 }
