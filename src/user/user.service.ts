@@ -44,4 +44,13 @@ export class UserService {
     await this.repo.remove(user);
     return plainToInstance(CreateUserDto, user);
   }
+
+  public async uploadFile(id: number, photoPath: string): Promise<User> {
+    const user = await this.repo.findOne({ where: { id } });
+    if (!user) {
+      throw new Error(`O usuário não foi encontrado.`);
+    }
+    user.photo_path = photoPath;
+    return this.repo.save(user);
+  }
 }
