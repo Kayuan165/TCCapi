@@ -6,9 +6,7 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './user/entities/user.entity';
 import { Attendance } from './attendance/entities/attendance.entity';
-import { RecognitionController } from './src/recognition/recognition.controller';
-import { RecognitionController } from './recognition/recognition.controller';
-import { RecognitionService } from './recognition/recognition.service';
+import { RecognitionModule } from './recognition/recognition.module';
 @Module({
   imports: [
     UserModule,
@@ -24,8 +22,9 @@ import { RecognitionService } from './recognition/recognition.service';
       synchronize: true,
       logging: true,
     }),
+    RecognitionModule,
   ],
-  controllers: [AppController, RecognitionController],
-  providers: [AppService, RecognitionService],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
