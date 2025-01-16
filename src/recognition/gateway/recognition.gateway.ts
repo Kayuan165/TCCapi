@@ -1,10 +1,12 @@
 import {
   OnGatewayConnection,
   OnGatewayDisconnect,
+  WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server } from 'http';
 
+@WebSocketGateway({ cors: true })
 export class RecognitionGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
@@ -19,7 +21,11 @@ export class RecognitionGateway
     console.log('Cliente desconectado', client.id);
   }
 
-  sendToClient(data: any) {
-    this.server.emit('recognition', data);
+  sendToClient(data: any): void {
+    if (this.server) {
+      this.server.emit('recognized', data);
+    } else {
+      throw new Error('Servidor não inicializado');
+    }
   }
 }

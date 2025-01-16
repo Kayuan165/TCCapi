@@ -8,7 +8,7 @@ import {
 import { RecognizedDto } from './dto/recognition.dto';
 import { RecognitionService } from './recognition.service';
 
-@Controller('recognition')
+@Controller('api')
 export class RecognitionController {
   constructor(private readonly recognitionService: RecognitionService) {}
 

@@ -7,6 +7,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './user/entities/user.entity';
 import { Attendance } from './attendance/entities/attendance.entity';
 import { RecognitionModule } from './recognition/recognition.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 @Module({
   imports: [
     UserModule,
@@ -23,6 +25,10 @@ import { RecognitionModule } from './recognition/recognition.module';
       logging: true,
     }),
     RecognitionModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],
