@@ -6,14 +6,17 @@ export class CreateUserDto {
   name!: string;
 
   @IsNotEmpty({ message: 'O campo email é obrigatório.' })
-  @IsEmail()
+  @IsEmail(
+    {},
+    { message: 'O campo email deve ser um endereço de email válido!' },
+  )
   email!: string;
 
   @IsNotEmpty({ message: 'O campo rg é obrigatório.' })
-  @IsEmail()
+  @IsString()
   rg!: string;
 
+  @IsNotEmpty({ message: 'O campo foto é obrigatório.' })
   @IsString()
-  @IsNotEmpty({ message: 'O campo photo_path é obrigatório.' })
   photo_path!: string;
 }

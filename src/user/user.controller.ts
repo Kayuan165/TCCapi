@@ -22,7 +22,28 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post('create')
-  create(@Body() createUserDto: CreateUserDto) {
+  @UseInterceptors(
+    FileInterceptor('photo', {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, callback) => {
+          const uniqueName = `${uuidv4()}${extname(file.originalname)}`;
+          callback(null, uniqueName);
+        },
+      }),
+    }),
+  )
+  create(@UploadedFile() file: Express.Multer.File, @Body() body: any) {
+    if (!body.name || !body.rg || !body.email) {
+      throw new Error('Nome, RG e Email são obrigatórios');
+    }
+
+    const createUserDto: CreateUserDto = {
+      name: body.name,
+      rg: body.rg,
+      email: body.email,
+      photo_path: file ? `uploads/${file.filename}` : null,
+    };
     return this.userService.create(createUserDto);
   }
 
@@ -44,22 +65,5 @@ export class UserController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.userService.remove(+id);
-  }
-  @Post('upload')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (req, file, callback) => {
-          const uniqueName = `${uuidv4()}${extname(file.originalname)}`;
-          callback(null, uniqueName);
-        },
-      }),
-    }),
-  )
-  uploadFile(@UploadedFile() file: Express.Multer.File) {
-    return {
-      filePath: `uploads/${file.filename}`,
-    };
   }
 }
