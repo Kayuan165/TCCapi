@@ -1,15 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import { Express } from 'multer';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { v4 as uuidv4 } from 'uuid';
 
 describe('UserController', () => {
-  let controller: UserController;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let service: UserService;
+  let userController: UserController;
+  // eslint-disable-next-line
+  let userService: UserService;
 
   const mockUserService = {
     create: jest.fn(),
@@ -30,55 +28,98 @@ describe('UserController', () => {
       ],
     }).compile();
 
-    controller = module.get<UserController>(UserController);
-    service = module.get<UserService>(UserService);
+    userController = module.get<UserController>(UserController);
+    userService = module.get<UserService>(UserService);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
+  it('should be defined', () => {
+    expect(userController).toBeDefined();
+  });
+
   describe('create', () => {
-    it('should create a new user', async () => {
-      const createUserDto: CreateUserDto = {
+    it('should create a user with valid data and file', async () => {
+      const file = {
+        originalname: 'photo.jpg',
+        filename: 'unique-photo.jpg',
+      } as Express.Multer.File;
+
+      const body = {
         name: 'John Doe',
-        email: 'john.doe@example.com',
+        email: 'johndoe@example.com',
         rg: '123456789',
-        photo_path: 'uploads/photo.jpg',
+        photo_path: 'upload/teste.jpg',
       };
-      const createdUser = { id: 1, ...createUserDto };
 
-      mockUserService.create.mockResolvedValue(createdUser);
+      const createUserDto: CreateUserDto = {
+        name: body.name,
+        email: body.email,
+        rg: body.rg,
+        photo_path: `uploads/${file.filename}`,
+      };
 
-      const result = await controller.create(createUserDto);
+      mockUserService.create.mockResolvedValue(createUserDto);
+
+      const result = await userController.create(file, body);
 
       expect(mockUserService.create).toHaveBeenCalledWith(createUserDto);
-      expect(result).toEqual(createdUser);
+      expect(result).toEqual(createUserDto);
+    });
+
+    it('should throw an error if required fields are missing', async () => {
+      expect(() =>
+        userController.create(null, { name: '', rg: '', email: '' }),
+      ).toThrow('Nome, RG e Email são obrigatórios');
+    });
+
+    it('should create a user without a file (photo_path should be null)', async () => {
+      const file = null;
+      const body = {
+        name: 'Jane Doe',
+        email: 'janedoe@example.com',
+        rg: '987654321',
+        photo_path: null,
+      };
+
+      const createUserDto: CreateUserDto = {
+        name: body.name,
+        email: body.email,
+        rg: body.rg,
+        photo_path: null,
+      };
+
+      mockUserService.create.mockResolvedValue(createUserDto);
+
+      const result = await userController.create(file, body);
+
+      expect(mockUserService.create).toHaveBeenCalledWith(createUserDto);
+      expect(result).toEqual(createUserDto);
     });
   });
 
   describe('findAll', () => {
-    it('should return a list of users', async () => {
-      const users = [
+    it('should return an array of users', async () => {
+      const users: CreateUserDto[] = [
         {
-          id: 1,
-          name: 'John Doe',
-          email: 'john.doe@example.com',
-          rg: '123456789',
-          photo_path: 'uploads/photo.jpg',
+          name: 'John',
+          email: 'john@example.com',
+          rg: '123456',
+          photo_path: 'uploads/photo1.jpg',
         },
         {
-          id: 2,
-          name: 'Jane Doe',
-          email: 'jane.doe@example.com',
-          rg: '987654321',
-          photo_path: 'uploads/photo.jpg',
+          name: 'Jane',
+          email: 'jane@example.com',
+          rg: '654321',
+          photo_path: 'uploads/photo2.jpg',
         },
       ];
 
       mockUserService.findAll.mockResolvedValue(users);
 
-      const result = await controller.findAll();
+      const result = await userController.findAll();
 
       expect(mockUserService.findAll).toHaveBeenCalled();
       expect(result).toEqual(users);
@@ -87,17 +128,16 @@ describe('UserController', () => {
 
   describe('findOne', () => {
     it('should return a single user by ID', async () => {
-      const user = {
-        id: 1,
+      const user: CreateUserDto = {
         name: 'John Doe',
-        email: 'john.doe@example.com',
-        rg: '123456789',
+        email: 'johndoe@example.com',
+        rg: '123456',
         photo_path: 'uploads/photo.jpg',
       };
 
       mockUserService.findOne.mockResolvedValue(user);
 
-      const result = await controller.findOne('1');
+      const result = await userController.findOne('1');
 
       expect(mockUserService.findOne).toHaveBeenCalledWith(1);
       expect(result).toEqual(user);
@@ -105,19 +145,19 @@ describe('UserController', () => {
   });
 
   describe('update', () => {
-    it('should update a user and return the updated user', async () => {
+    it('should update a user', async () => {
       const updateUserDto: UpdateUserDto = { name: 'Updated Name' };
       const updatedUser = {
         id: 1,
         name: 'Updated Name',
-        email: 'john.doe@example.com',
-        rg: '123456789',
+        email: 'johndoe@example.com',
+        rg: '123456',
         photo_path: 'uploads/photo.jpg',
       };
 
       mockUserService.update.mockResolvedValue(updatedUser);
 
-      const result = await controller.update('1', updateUserDto);
+      const result = await userController.update('1', updateUserDto);
 
       expect(mockUserService.update).toHaveBeenCalledWith(1, updateUserDto);
       expect(result).toEqual(updatedUser);
@@ -125,34 +165,20 @@ describe('UserController', () => {
   });
 
   describe('remove', () => {
-    it('should remove a user and return the removed user', async () => {
-      const removedUser = {
-        id: 1,
+    it('should remove a user by ID', async () => {
+      const removedUser: CreateUserDto = {
         name: 'John Doe',
-        email: 'john.doe@example.com',
-        rg: '123456789',
+        email: 'johndoe@example.com',
+        rg: '123456',
         photo_path: 'uploads/photo.jpg',
       };
 
       mockUserService.remove.mockResolvedValue(removedUser);
 
-      const result = await controller.remove('1');
+      const result = await userController.remove('1');
 
       expect(mockUserService.remove).toHaveBeenCalledWith(1);
       expect(result).toEqual(removedUser);
-    });
-  });
-
-  describe('uploadFile', () => {
-    it('should return the file path after upload', () => {
-      const file = {
-        originalname: 'file.jpg',
-        filename: `${uuidv4()}.jpg`,
-      } as Express.Multer.File;
-
-      const result = controller.uploadFile(file);
-
-      expect(result).toEqual({ filePath: `uploads/${file.filename}` });
     });
   });
 });

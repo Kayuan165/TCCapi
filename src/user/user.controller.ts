@@ -13,7 +13,7 @@ import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage, Express } from 'multer';
+import { diskStorage } from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { extname } from 'path';
 
@@ -39,9 +39,7 @@ export class UserController {
     }
 
     const createUserDto: CreateUserDto = {
-      name: body.name,
-      rg: body.rg,
-      email: body.email,
+      ...body,
       photo_path: file ? `uploads/${file.filename}` : null,
     };
     return this.userService.create(createUserDto);
