@@ -31,9 +31,24 @@ export class UserService {
     return plainToInstance(CreateUserDto, user);
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    await this.repo.update(id, updateUserDto);
-    return this.repo.findOne({ where: { id } });
+  async update(
+    id: number,
+    updateUserDto: UpdateUserDto,
+    file?: Express.Multer.File,
+  ): Promise<User> {
+    const user = await this.repo.findOne({ where: { id } });
+
+    if (!user) {
+      throw new Error('Usuário com ID ${id} não encontrado');
+    }
+
+    Object.assign(user, updateUserDto);
+
+    if (file) {
+      user.photo_path = `uploads/${file.filename}`;
+    }
+
+    return this.repo.save(user);
   }
 
   public async remove(id: number): Promise<CreateUserDto> {
