@@ -14,6 +14,12 @@ async function bootstrap() {
   if (!existsSync(uploadsDir)) {
     mkdirSync(uploadsDir);
   }
+
+  app.enableCors({
+    origin: ['http://localhost:4200'],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+  });
+
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
