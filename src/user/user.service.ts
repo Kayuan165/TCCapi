@@ -33,22 +33,46 @@ export class UserService {
 
   async update(
     id: number,
-    updateUserDto: UpdateUserDto,
+    updateUserDto: Partial<UpdateUserDto>,
     file?: Express.Multer.File,
   ): Promise<User> {
     const user = await this.repo.findOne({ where: { id } });
 
     if (!user) {
-      throw new Error('Usuário com ID ${id} não encontrado');
+      throw new Error(`O usuário não foi encontrado.`);
     }
 
-    Object.assign(user, updateUserDto);
-
-    if (file) {
-      user.photo_path = `uploads/${file.filename}`;
+    if (updateUserDto.email && updateUserDto.email !== user.email) {
+      const userExists = await this.repo.findOne({
+        where: { email: updateUserDto.email },
+      });
+      if (userExists && userExists.id !== id) {
+        throw new Error('Já existe um usuário com esse email.');
+      }
     }
 
-    return this.repo.save(user);
+    if (updateUserDto.rg && updateUserDto.rg !== user.rg) {
+      const userExists = await this.repo.findOne({
+        where: { rg: updateUserDto.rg },
+      });
+      if (userExists && userExists.id !== id) {
+        throw new Error('Já existe um usuário com esse RG.');
+      }
+    }
+
+    const updatedFields: Partial<User> = {
+      ...(updateUserDto.name ? { name: updateUserDto.name } : {}),
+      ...(updateUserDto.email ? { email: updateUserDto.email } : {}),
+      ...(updateUserDto.rg ? { rg: updateUserDto.rg } : {}),
+      ...(file ? { photo_path: `uploads/${file.filename}` } : {}),
+      updated_at: new Date(),
+    };
+
+    if (Object.keys(updatedFields).length > 0) {
+      await this.repo.update({ id }, updatedFields);
+    }
+
+    return this.repo.findOne({ where: { id } });
   }
 
   public async remove(id: number): Promise<CreateUserDto> {
