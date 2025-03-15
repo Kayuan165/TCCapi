@@ -4,8 +4,10 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
 import { IUser } from '../interfaces/user.interface';
+import { Attendance } from 'src/attendance/entities/attendance.entity';
 
 @Entity('users')
 export class User implements IUser {
@@ -30,6 +32,6 @@ export class User implements IUser {
   @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   updated_at: Date;
 
-  // @OneToMany(() => Attendance, (attendance) => attendance.user)
-  // attendances: Attendance[];
+  @OneToMany(() => Attendance, (attendance) => attendance.user)
+  attendances: Attendance[];
 }

@@ -5,9 +5,14 @@ import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { plainToInstance } from 'class-transformer';
-
+import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+import { Server } from 'socket.io';
+@WebSocketGateway({ cors: true })
 @Injectable()
 export class UserService {
+  @WebSocketServer()
+  serve: Server;
+
   public users: User[];
   constructor(
     @InjectRepository(User)
@@ -17,6 +22,7 @@ export class UserService {
   async create(createUserDto: CreateUserDto): Promise<CreateUserDto> {
     const user = this.repo.create(createUserDto);
     const dbUser = await this.repo.save(user);
+    this.serve.emit('newUser', dbUser);
 
     return plainToInstance(CreateUserDto, dbUser);
   }

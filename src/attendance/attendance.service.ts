@@ -1,26 +1,45 @@
 import { Injectable } from '@nestjs/common';
-import { CreateAttendanceDto } from './dto/create-attendance.dto';
-import { UpdateAttendanceDto } from './dto/update-attendance.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Attendance } from './entities/attendance.entity';
+import { Repository } from 'typeorm';
+import { User } from 'src/user/entities/user.entity';
+import { RecognitionGateway } from 'src/recognition/gateway/recognition.gateway';
 
 @Injectable()
 export class AttendanceService {
-  create(createAttendanceDto: CreateAttendanceDto) {
-    return 'This action adds a new attendance';
+  constructor(
+    @InjectRepository(Attendance)
+    private readonly attendanceRepo: Repository<Attendance>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+    private readonly recognitionGateway: RecognitionGateway,
+  ) {}
+
+  async registerEntry(userId: number): Promise<Attendance> {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new Error('Usuário não encontrado');
+    }
+
+    const newAttendance = this.attendanceRepo.create({ user });
+    const savedAttendance = await this.attendanceRepo.save(newAttendance);
+
+    this.recognitionGateway.server.emit('visitorReconized', savedAttendance);
+
+    return savedAttendance;
   }
 
-  findAll() {
-    return `This action returns all attendance`;
-  }
+  async registerExit(userId: number): Promise<Attendance> {
+    const attendance = await this.attendanceRepo.findOne({
+      where: { user: { id: userId }, exitTime: null },
+      order: { entryTime: 'DESC' },
+    });
 
-  findOne(id: number) {
-    return `This action returns a #${id} attendance`;
-  }
+    if (!attendance) {
+      throw new Error('Nenhum regustro de entrada encontrado');
+    }
 
-  update(id: number, updateAttendanceDto: UpdateAttendanceDto) {
-    return `This action updates a #${id} attendance`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} attendance`;
+    attendance.exitTime = new Date();
+    return this.attendanceRepo.save(attendance);
   }
 }
