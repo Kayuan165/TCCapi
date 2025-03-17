@@ -1,3 +1,4 @@
+import { forwardRef, Inject } from '@nestjs/common';
 import {
   OnGatewayConnection,
   OnGatewayDisconnect,
@@ -15,7 +16,10 @@ export class RecognitionGateway
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly attendandeService: AttendanceService) {}
+  constructor(
+    @Inject(forwardRef(() => AttendanceService))
+    private readonly attendanceService: AttendanceService,
+  ) {}
 
   handleConnection(client: any) {
     console.log('Cliente conectado', client.id);
@@ -28,12 +32,17 @@ export class RecognitionGateway
   @SubscribeMessage('recognized')
   async handleRecognized(client: any, payload: { userId: number }) {
     try {
-      const attendance = await this.attendandeService.registerEntry(
+      const attendance = await this.attendanceService.registerEntry(
         payload.userId,
       );
       this.server.emit('newAttendance', attendance);
     } catch (error) {
       client.emit('error', error.message);
     }
+  }
+
+  async notifyExit(userId: number) {
+    const attendance = await this.attendanceService.registerExit(userId);
+    this.server.emit('userExit', attendance);
   }
 }

@@ -11,8 +11,6 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 @Module({
   imports: [
-    UserModule,
-    AttendanceModule,
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
@@ -21,9 +19,12 @@ import { join } from 'path';
       password: '1234',
       database: 'TCCSystem',
       entities: [User, Attendance],
+      autoLoadEntities: true,
       synchronize: true,
       logging: true,
     }),
+    UserModule,
+    AttendanceModule,
     RecognitionModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),

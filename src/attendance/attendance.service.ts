@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Attendance } from './entities/attendance.entity';
 import { Repository } from 'typeorm';
@@ -12,6 +12,7 @@ export class AttendanceService {
     private readonly attendanceRepo: Repository<Attendance>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @Inject(forwardRef(() => RecognitionGateway))
     private readonly recognitionGateway: RecognitionGateway,
   ) {}
 
@@ -21,7 +22,18 @@ export class AttendanceService {
       throw new Error('Usuário não encontrado');
     }
 
-    const newAttendance = this.attendanceRepo.create({ user });
+    const existingAttendance = await this.attendanceRepo.findOne({
+      where: { user: { id: userId }, exitTime: null },
+    });
+
+    if (existingAttendance) {
+      throw new Error('Usuário já está registrado');
+    }
+
+    const newAttendance = this.attendanceRepo.create({
+      user,
+      entryTime: new Date(),
+    });
     const savedAttendance = await this.attendanceRepo.save(newAttendance);
 
     this.recognitionGateway.server.emit('visitorReconized', savedAttendance);
@@ -40,6 +52,21 @@ export class AttendanceService {
     }
 
     attendance.exitTime = new Date();
-    return this.attendanceRepo.save(attendance);
+    const upadateAttendance = await this.attendanceRepo.save(attendance);
+
+    this.recognitionGateway.notifyExit(userId);
+
+    return upadateAttendance;
+  }
+
+  async getAllAttendances(): Promise<Attendance[]> {
+    return this.attendanceRepo.find({
+      relations: ['user'],
+      order: { entryTime: 'DESC' },
+    });
+  }
+
+  async findUserByRg(rg: string): Promise<User | null> {
+    return this.userRepo.findOne({ where: { rg } });
   }
 }
