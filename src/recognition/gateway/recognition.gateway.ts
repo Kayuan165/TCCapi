@@ -6,10 +6,10 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Server } from 'http';
+import { Server, Socket } from 'socket.io';
 import { AttendanceService } from 'src/attendance/attendance.service';
 
-@WebSocketGateway({ cors: true })
+@WebSocketGateway({ cors: { origin: '*' } })
 export class RecognitionGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
@@ -21,11 +21,11 @@ export class RecognitionGateway
     private readonly attendanceService: AttendanceService,
   ) {}
 
-  handleConnection(client: any) {
+  handleConnection(client: Socket) {
     console.log('Cliente conectado', client.id);
   }
 
-  handleDisconnect(client: any) {
+  handleDisconnect(client: Socket) {
     console.log('Cliente desconectado', client.id);
   }
 

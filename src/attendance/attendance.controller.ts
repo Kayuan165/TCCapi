@@ -1,4 +1,11 @@
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  HttpStatus,
+  HttpException,
+} from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 @Controller('attendance')
 export class AttendanceController {
@@ -6,6 +13,12 @@ export class AttendanceController {
 
   @Post('entry')
   async recognizedUser(@Body('userId') userId: number) {
+    if (!userId) {
+      throw new HttpException(
+        'O ID do usuário é obrigatório',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
     return this.attendanceService.registerEntry(userId);
   }
 

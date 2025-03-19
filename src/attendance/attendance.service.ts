@@ -1,7 +1,13 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Attendance } from './entities/attendance.entity';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { User } from 'src/user/entities/user.entity';
 import { RecognitionGateway } from 'src/recognition/gateway/recognition.gateway';
 
@@ -19,44 +25,60 @@ export class AttendanceService {
   async registerEntry(userId: number): Promise<Attendance> {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) {
-      throw new Error('Usuário não encontrado');
+      throw new NotFoundException('Usuário não encontrado');
     }
 
-    const existingAttendance = await this.attendanceRepo.findOne({
-      where: { user: { id: userId }, exitTime: null },
+    const activeAttendance = await this.attendanceRepo.findOne({
+      where: { user: { id: userId }, exitTime: IsNull() },
     });
 
-    if (existingAttendance) {
-      throw new Error('Usuário já está registrado');
+    if (activeAttendance) {
+      throw new BadRequestException('Usuário já está dentro do condomínio');
+    }
+
+    const lastAttendance = await this.attendanceRepo.findOne({
+      where: { user: { id: userId }, exitTime: IsNull() },
+      order: { entryTime: 'DESC' },
+    });
+
+    if (lastAttendance) {
+      lastAttendance.entryTime = new Date();
+      lastAttendance.exitTime = null;
+
+      await this.attendanceRepo.save(lastAttendance);
+
+      this.recognitionGateway.server.emit('visitorRecognized', lastAttendance);
+      return lastAttendance;
     }
 
     const newAttendance = this.attendanceRepo.create({
       user,
       entryTime: new Date(),
     });
+
     const savedAttendance = await this.attendanceRepo.save(newAttendance);
 
-    this.recognitionGateway.server.emit('visitorReconized', savedAttendance);
+    this.recognitionGateway.server.emit('visitorRecognized', savedAttendance);
 
     return savedAttendance;
   }
 
   async registerExit(userId: number): Promise<Attendance> {
     const attendance = await this.attendanceRepo.findOne({
-      where: { user: { id: userId }, exitTime: null },
+      where: { user: { id: userId }, exitTime: IsNull() },
       order: { entryTime: 'DESC' },
     });
 
     if (!attendance) {
-      throw new Error('Nenhum regustro de entrada encontrado');
+      throw new BadRequestException('Nenhum registro de entrada encontrado');
     }
 
     attendance.exitTime = new Date();
-    const upadateAttendance = await this.attendanceRepo.save(attendance);
+    await this.attendanceRepo.save(attendance);
 
-    this.recognitionGateway.notifyExit(userId);
+    this.recognitionGateway.server.emit('userExit', attendance);
 
-    return upadateAttendance;
+    return attendance;
   }
 
   async getAllAttendances(): Promise<Attendance[]> {
