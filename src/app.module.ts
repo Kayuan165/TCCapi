@@ -9,6 +9,7 @@ import { Attendance } from './attendance/entities/attendance.entity';
 import { RecognitionModule } from './recognition/recognition.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { ResidentModule } from './resident/resident.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -30,6 +31,7 @@ import { join } from 'path';
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
     }),
+    ResidentModule,
   ],
   controllers: [AppController],
   providers: [AppService],
