@@ -1,7 +1,5 @@
 import {
   BadRequestException,
-  forwardRef,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -9,7 +7,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Attendance } from './entities/attendance.entity';
 import { IsNull, Repository } from 'typeorm';
 import { User } from 'src/user/entities/user.entity';
-import { RecognitionGateway } from 'src/recognition/gateway/recognition.gateway';
 
 @Injectable()
 export class AttendanceService {
@@ -18,8 +15,6 @@ export class AttendanceService {
     private readonly attendanceRepo: Repository<Attendance>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    @Inject(forwardRef(() => RecognitionGateway))
-    private readonly recognitionGateway: RecognitionGateway,
   ) {}
 
   async registerEntry(userId: number): Promise<Attendance> {
@@ -47,7 +42,6 @@ export class AttendanceService {
 
       await this.attendanceRepo.save(lastAttendance);
 
-      this.recognitionGateway.server.emit('visitorRecognized', lastAttendance);
       return lastAttendance;
     }
 
@@ -57,8 +51,6 @@ export class AttendanceService {
     });
 
     const savedAttendance = await this.attendanceRepo.save(newAttendance);
-
-    this.recognitionGateway.server.emit('visitorRecognized', savedAttendance);
 
     return savedAttendance;
   }
@@ -76,8 +68,6 @@ export class AttendanceService {
     attendance.exitTime = new Date();
     await this.attendanceRepo.save(attendance);
 
-    this.recognitionGateway.server.emit('userExit', attendance);
-
     return attendance;
   }
 
@@ -88,7 +78,13 @@ export class AttendanceService {
     });
   }
 
-  async findUserByRg(rg: string): Promise<User | null> {
-    return this.userRepo.findOne({ where: { rg } });
+  async getAttendancesByType(
+    type: 'visitor' | 'resident',
+  ): Promise<Attendance[]> {
+    return this.attendanceRepo.find({
+      relations: ['user'],
+      where: { user: { type } },
+      order: { entryTime: 'DESC' },
+    });
   }
 }

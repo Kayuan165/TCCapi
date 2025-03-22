@@ -23,6 +23,15 @@ export class User implements IUser {
   @Column({ type: 'varchar', length: 15, unique: true, nullable: false })
   rg: string;
 
+  @Column({ nullable: true })
+  address?: string; //  moradores
+
+  @Column({ nullable: true })
+  phone?: string; //  moradores
+
+  @Column({ type: 'enum', enum: ['visitor', 'resident'], default: 'visitor' })
+  type: 'visitor' | 'resident';
+
   @Column({ length: 100, nullable: false })
   photo_path: string;
 

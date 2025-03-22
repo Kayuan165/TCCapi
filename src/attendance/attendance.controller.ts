@@ -5,6 +5,7 @@ import {
   Get,
   HttpStatus,
   HttpException,
+  Query,
 } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 @Controller('attendance')
@@ -30,5 +31,16 @@ export class AttendanceController {
   @Get('all')
   async getAllAttendances() {
     return this.attendanceService.getAllAttendances();
+  }
+
+  @Get()
+  async getAttendancesByType(@Query('type') type: 'visitor' | 'resident') {
+    if (!type || !['visitor', 'resident'].includes(type)) {
+      throw new HttpException(
+        'Tipo de usuário inválido',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    return this.attendanceService.getAttendancesByType(type);
   }
 }
