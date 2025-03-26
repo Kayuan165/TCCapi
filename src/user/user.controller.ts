@@ -8,6 +8,9 @@ import {
   Delete,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
+  ConflictException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -33,16 +36,39 @@ export class UserController {
       }),
     }),
   )
-  create(@UploadedFile() file: Express.Multer.File, @Body() body: any) {
-    if (!body.name || !body.rg || !body.email) {
-      throw new Error('Nome, RG e Email são obrigatórios');
+  async create(@UploadedFile() file: Express.Multer.File, @Body() body: any) {
+    console.log(body);
+
+    const parsedBody = JSON.parse(JSON.stringify(body));
+
+    if (
+      !parsedBody.name ||
+      !parsedBody.rg ||
+      !parsedBody.email ||
+      !parsedBody.type
+    ) {
+      throw new BadRequestException('Nome, RG, Email e Tipo são obrigatórios');
+    }
+
+    if (!['visitor', 'resident'].includes(body.type)) {
+      throw new BadRequestException(
+        "O campo 'type' deve ser 'visitor' ou 'resident'",
+      );
     }
 
     const createUserDto: CreateUserDto = {
-      ...body,
+      ...parsedBody,
       photo_path: file ? `uploads/${file.filename}` : null,
     };
-    return this.userService.create(createUserDto);
+
+    try {
+      return await this.userService.create(createUserDto);
+    } catch (error) {
+      if (error.code === '23505') {
+        throw new ConflictException('Este E-mail ou RG já estão cadastrados');
+      }
+      throw new InternalServerErrorException('Erro ao criar usuário');
+    }
   }
 
   @Get()
