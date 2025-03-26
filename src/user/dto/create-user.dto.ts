@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsIn, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateUserDto {
   @IsNotEmpty({ message: 'O campo nome é obrigatório.' })
@@ -19,4 +19,11 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'O campo foto é obrigatório.' })
   @IsString()
   photo_path!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @IsIn(['visitor', 'resident'], {
+    message: "O tipo do usuário deve ser 'visitor' ou 'resident'",
+  })
+  type: 'visitor' | 'resident';
 }

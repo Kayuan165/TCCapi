@@ -1,18 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { plainToInstance } from 'class-transformer';
-import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
-import { Server } from 'socket.io';
-@WebSocketGateway({ cors: true })
 @Injectable()
 export class UserService {
-  @WebSocketServer()
-  serve: Server;
-
   public users: User[];
   constructor(
     @InjectRepository(User)
@@ -20,9 +14,16 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<CreateUserDto> {
+    const existingUser = await this.repo.findOne({
+      where: [{ email: createUserDto.email }, { rg: createUserDto.rg }],
+    });
+
+    if (existingUser) {
+      throw new ConflictException('Já existe um usuário com esse e-mail ou RG');
+    }
+
     const user = this.repo.create(createUserDto);
     const dbUser = await this.repo.save(user);
-    this.serve.emit('newUser', dbUser);
 
     return plainToInstance(CreateUserDto, dbUser);
   }
