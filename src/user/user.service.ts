@@ -28,8 +28,13 @@ export class UserService {
     return plainToInstance(CreateUserDto, dbUser);
   }
 
-  public async findAll(): Promise<CreateUserDto[]> {
-    const users = await this.repo.find();
+  public async findAllResident(): Promise<CreateUserDto[]> {
+    const users = await this.repo.find({ where: { type: 'resident' } });
+    return plainToInstance(CreateUserDto, users);
+  }
+
+  public async findAllVisitors(): Promise<CreateUserDto[]> {
+    const users = await this.repo.find({ where: { type: 'visitor' } });
     return plainToInstance(CreateUserDto, users);
   }
 

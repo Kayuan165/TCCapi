@@ -71,9 +71,14 @@ export class UserController {
     }
   }
 
-  @Get()
-  findAll() {
-    return this.userService.findAll();
+  @Get('/resident')
+  findAllResident() {
+    return this.userService.findAllResident();
+  }
+
+  @Get('/visitors')
+  findAllVisitors() {
+    return this.userService.findAllVisitors();
   }
 
   @Get(':id')
