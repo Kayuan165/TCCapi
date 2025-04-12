@@ -6,8 +6,7 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './user/entities/user.entity';
 import { Attendance } from './attendance/entities/attendance.entity';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
+import { FaceTrainingModule } from './face-training/face-training.module';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -24,10 +23,7 @@ import { join } from 'path';
     }),
     UserModule,
     AttendanceModule,
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'uploads'),
-      serveRoot: '/uploads',
-    }),
+    FaceTrainingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

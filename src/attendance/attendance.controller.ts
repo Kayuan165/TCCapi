@@ -8,24 +8,17 @@ import {
   Query,
 } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
+
 @Controller('attendance')
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
-  @Post('entry')
-  async recognizedUser(@Body('userId') userId: number) {
-    if (!userId) {
-      throw new HttpException(
-        'O ID do usuário é obrigatório',
-        HttpStatus.BAD_REQUEST,
-      );
+  @Post('register')
+  async registerAttendance(@Body('rg') rg: string) {
+    if (!rg) {
+      throw new HttpException('O RG é obrigatório', HttpStatus.BAD_REQUEST);
     }
-    return this.attendanceService.registerEntry(userId);
-  }
-
-  @Post('exit')
-  async registerExit(@Body('userId') userId: number) {
-    return this.attendanceService.registerExit(userId);
+    return this.attendanceService.registerAttendance(rg);
   }
 
   @Get('all')

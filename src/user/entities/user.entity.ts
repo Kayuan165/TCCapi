@@ -24,16 +24,13 @@ export class User implements IUser {
   rg: string;
 
   @Column({ nullable: true })
-  address?: string; //  moradores
+  address?: string; // moradores
 
   @Column({ nullable: true })
-  phone?: string; //  moradores
+  phone?: string; // moradores
 
   @Column({ type: 'enum', enum: ['visitor', 'resident'], default: 'visitor' })
   type: 'visitor' | 'resident';
-
-  @Column({ length: 100, nullable: false })
-  photo_path: string;
 
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;

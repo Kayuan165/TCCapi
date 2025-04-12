@@ -3,7 +3,7 @@ import { IsDateString, IsInt, IsNotEmpty } from 'class-validator';
 export class CreateAttendanceDto {
   @IsInt()
   @IsNotEmpty()
-  userId: number;
+  rg: number;
 
   @IsNotEmpty()
   @IsDateString()

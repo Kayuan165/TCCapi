@@ -16,10 +16,6 @@ export class CreateUserDto {
   @IsString()
   rg!: string;
 
-  @IsNotEmpty({ message: 'O campo foto é obrigatório.' })
-  @IsString()
-  photo_path!: string;
-
   @IsNotEmpty()
   @IsString()
   @IsIn(['visitor', 'resident'], {

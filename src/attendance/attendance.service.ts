@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Attendance } from './entities/attendance.entity';
 import { IsNull, Repository } from 'typeorm';
@@ -17,34 +13,46 @@ export class AttendanceService {
     private readonly userRepo: Repository<User>,
   ) {}
 
-  async registerEntry(userId: number): Promise<Attendance> {
-    const user = await this.userRepo.findOne({ where: { id: userId } });
+  private formatTime(date: Date): string {
+    return date.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+  }
+
+  async registerAttendance(rg: string): Promise<{
+    message: string;
+    attendance: Attendance;
+    formattedEntryTime?: string;
+    formattedExitTime?: string;
+  }> {
+    const user = await this.userRepo.findOne({ where: { rg } });
     if (!user) {
       throw new NotFoundException('Usuário não encontrado');
     }
 
+    // Verifica se existe registro de entrada sem saída
     const activeAttendance = await this.attendanceRepo.findOne({
-      where: { user: { id: userId }, exitTime: IsNull() },
-    });
-
-    if (activeAttendance) {
-      throw new BadRequestException('Usuário já está dentro do condomínio');
-    }
-
-    const lastAttendance = await this.attendanceRepo.findOne({
-      where: { user: { id: userId }, exitTime: IsNull() },
+      where: { user: { id: user.id }, exitTime: IsNull() },
       order: { entryTime: 'DESC' },
     });
 
-    if (lastAttendance) {
-      lastAttendance.entryTime = new Date();
-      lastAttendance.exitTime = null;
+    if (activeAttendance) {
+      // Registra saída
+      activeAttendance.exitTime = new Date();
+      await this.attendanceRepo.save(activeAttendance);
 
-      await this.attendanceRepo.save(lastAttendance);
-
-      return lastAttendance;
+      return {
+        message: 'Saída registrada com sucesso',
+        attendance: activeAttendance,
+        formattedEntryTime: this.formatTime(activeAttendance.entryTime),
+        formattedExitTime: this.formatTime(activeAttendance.exitTime),
+      };
     }
 
+    // Cria novo registro de entrada
     const newAttendance = this.attendanceRepo.create({
       user,
       entryTime: new Date(),
@@ -52,39 +60,45 @@ export class AttendanceService {
 
     const savedAttendance = await this.attendanceRepo.save(newAttendance);
 
-    return savedAttendance;
-  }
-
-  async registerExit(userId: number): Promise<Attendance> {
-    const attendance = await this.attendanceRepo.findOne({
-      where: { user: { id: userId }, exitTime: IsNull() },
-      order: { entryTime: 'DESC' },
-    });
-
-    if (!attendance) {
-      throw new BadRequestException('Nenhum registro de entrada encontrado');
-    }
-
-    attendance.exitTime = new Date();
-    await this.attendanceRepo.save(attendance);
-
-    return attendance;
+    return {
+      message: 'Entrada registrada com sucesso',
+      attendance: savedAttendance,
+      formattedEntryTime: this.formatTime(savedAttendance.entryTime),
+    };
   }
 
   async getAllAttendances(): Promise<Attendance[]> {
-    return this.attendanceRepo.find({
+    const attendances = await this.attendanceRepo.find({
       relations: ['user'],
       order: { entryTime: 'DESC' },
     });
+
+    // Adiciona horários formatados para cada registro
+    return attendances.map((attendance) => ({
+      ...attendance,
+      formattedEntryTime: this.formatTime(attendance.entryTime),
+      formattedExitTime: attendance.exitTime
+        ? this.formatTime(attendance.exitTime)
+        : null,
+    }));
   }
 
   async getAttendancesByType(
     type: 'visitor' | 'resident',
   ): Promise<Attendance[]> {
-    return this.attendanceRepo.find({
+    const attendances = await this.attendanceRepo.find({
       relations: ['user'],
       where: { user: { type } },
       order: { entryTime: 'DESC' },
     });
+
+    // Adiciona horários formatados para cada registro
+    return attendances.map((attendance) => ({
+      ...attendance,
+      formattedEntryTime: this.formatTime(attendance.entryTime),
+      formattedExitTime: attendance.exitTime
+        ? this.formatTime(attendance.exitTime)
+        : null,
+    }));
   }
 }
