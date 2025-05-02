@@ -1,9 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TrainingLog } from './entities/training-log.entity';
 import { Repository } from 'typeorm';
 import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class FaceTrainingService {
@@ -22,31 +27,36 @@ export class FaceTrainingService {
     });
     await this.trainingLogRepository.save(log);
 
-    // Simula o callback após 2 segundos
-    setTimeout(() => {
-      this.handleCallback({
-        rg: data.rg,
-        success: true,
-      });
-    }, 2000);
-
-    return { trainingId: log.id, status: 'started' };
-
     try {
-      await firstValueFrom(
-        this.httpService.post('http://python-service/train', {
+      this.httpService
+        .post('http://localhost:5000/coletar', {
           rg: data.rg,
-          callbackUrl: `/face-training/callback/${log.id}`,
-        }),
-      );
-      return { trainingId: log.id, status: 'started' };
+          callbackUrl: `http://localhost:3000/face-training/callback`,
+        })
+        .subscribe({
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          error: (err) => {
+            this.trainingLogRepository
+              .update({ id: log.id, status: 'pending' }, { status: 'failed' })
+              .catch((e) => console.error('Falha ao atualizar status:', e));
+          },
+        });
+
+      return {
+        trainingId: log.id,
+        status: 'pending',
+        message: 'Solicitação de treinamento recebida com sucesso',
+      };
     } catch (error) {
       await this.trainingLogRepository.update(log.id, { status: 'failed' });
-      this.logger.error(
-        `Falha no treinamento para RG: ${data.rg}`,
-        error.stack,
+      throw new HttpException(
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: 'Falha ao iniciar treinamento',
+          details: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
-      throw new Error('Falha ao iniciar treinamento');
     }
   }
 
@@ -63,20 +73,19 @@ export class FaceTrainingService {
   }
 
   async handleCallback(callbackData: { rg: string; success: boolean }) {
-    if (!callbackData.rg) {
-      throw new Error('RG é obrigatório no callback');
-    }
-
-    await this.trainingLogRepository.update(
-      {
-        rg: callbackData.rg,
-        status: 'pending',
-      },
+    const result = await this.trainingLogRepository.update(
+      { rg: callbackData.rg, status: 'pending' },
       {
         status: callbackData.success ? 'completed' : 'failed',
         completedAt: new Date(),
       },
     );
+
+    if (result.affected === 0) {
+      throw new NotFoundException('Registro de treinamento não encontrado');
+    }
+
+    return { success: true };
   }
 
   async getTrainingStatus(rg: string) {
