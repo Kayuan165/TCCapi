@@ -36,14 +36,12 @@ export class AttendanceService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    // Verifica se existe registro de entrada sem saída
     const activeAttendance = await this.attendanceRepo.findOne({
       where: { user: { id: user.id }, exitTime: IsNull() },
       order: { entryTime: 'DESC' },
     });
 
     if (activeAttendance) {
-      // Registra saída
       activeAttendance.exitTime = new Date();
       await this.attendanceRepo.save(activeAttendance);
 
@@ -55,7 +53,6 @@ export class AttendanceService {
       };
     }
 
-    // Cria novo registro de entrada
     const newAttendance = this.attendanceRepo.create({
       user,
       entryTime: new Date(),
@@ -76,7 +73,6 @@ export class AttendanceService {
       order: { entryTime: 'DESC' },
     });
 
-    // Adiciona horários formatados para cada registro
     return attendances.map((attendance) => ({
       ...attendance,
       formattedEntryTime: this.formatTime(attendance.entryTime),
@@ -95,7 +91,6 @@ export class AttendanceService {
       order: { entryTime: 'DESC' },
     });
 
-    // Adiciona horários formatados para cada registro
     return attendances.map((attendance) => ({
       ...attendance,
       formattedEntryTime: this.formatTime(attendance.entryTime),
